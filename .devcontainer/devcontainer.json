@@ -1,0 +1,18 @@
+{
+    "name": "Runner",
+    "build": {
+        "dockerfile": "../Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    },
+    "runArgs": [
+        "--network=chroma_face_app_network"  
+    ]
+}

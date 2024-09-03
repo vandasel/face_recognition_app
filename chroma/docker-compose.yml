@@ -1,12 +1,19 @@
+version: '3.9'
+
 services:
   vectordb:
-    image: ghcr.io/chroma-core/chroma:latest
+    image: ghcr.io/chroma-core/chroma:0.5.5
+    container_name: chroma_docker
     environment:
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=TRUE
       - PERSIST_DIRECTORY=/chroma/my_db
-    volumes:
-      - chroma-data:/chroma/chroma/
     ports:
-      - 8000:8000
-    
+      - 12345:8000
+    volumes:
+      - ./my_db:/chroma/my_db
+    networks:
+      - face_app_network 
+networks:
+  face_app_network:
+    driver: bridge
