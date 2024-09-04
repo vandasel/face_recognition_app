@@ -3,3 +3,4 @@ keras-facenet
 mtcnn
 opencv-python
 tensorflow
+matplotlib
