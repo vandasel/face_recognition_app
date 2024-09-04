@@ -4,3 +4,4 @@ mtcnn
 opencv-python
 tensorflow
 matplotlib
+tensorflow-rocm

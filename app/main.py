@@ -10,14 +10,14 @@ class Embedder():
         self.path_list = []
 
     def get_paths(self): 
-        for dirpath, dirnames, filenames in os.walk('dataset'):
+        for dirpath, dirnames, filenames in os.walk(self.path):
             for filename in filenames:
                 self.path_list.append(os.path.join(dirpath, filename))
 
         return self.path_list
 
     def get_faces(self):
-        return FaceLoader(paths=self.path_list[0:212]).run()
+        return FaceLoader(paths=self.path_list[0:100]).run()
 
 
     def run(self):
