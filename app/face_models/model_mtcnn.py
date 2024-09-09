@@ -11,7 +11,7 @@ class FaceLoader():
         self.images = []
 
                     
-    def get_faces(self):
+    def get_faces(self) -> dict:
         out = {}
         for path in self.paths:
             image = cv.imread(path)
