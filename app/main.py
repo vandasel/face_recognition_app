@@ -9,6 +9,28 @@ import time
 
 
 class Embedder():
+    """
+    Class used for facial recognition algorithm TBC.
+
+    Attributes
+    ----------
+    embedder : FaceNet
+        FaceNet model for generating embeddings from faces
+    chroma_client : chromadb.HttpClient
+        A ChromaDB server client, connected by docker network
+    threshold : for now float, than list
+        A threshold used for face match results
+    path : str
+        Path to the dataset's directory
+    path_list : list
+        File paths for all images in the directory
+    train : list
+        List of paths for training images
+    test : list
+        List of paths for testing images
+    val : list
+        List of paths for validation images
+    """
     embedder = FaceNet()
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
     threshold = 0.7
@@ -19,7 +41,24 @@ class Embedder():
         self.test = []
         self.val = []
 
+        """
+        Initializes variables for future use as self.
+
+        Parameters
+        ----------
+        path : str
+            Path to the dataset's directory
+        """
+
     def get_paths(self): 
+        """
+        Collects the paths of all images in the dataset
+
+        Returns
+        -------
+        list
+            A shuffled list of file paths
+        """
         for dirpath, dirnames, filenames in os.walk(self.path):
             for filename in filenames:
                 self.path_list.append(os.path.join(dirpath, filename))
@@ -28,12 +67,24 @@ class Embedder():
         return self.path_list
 
     def split_data(self):
+        """
+        Splits the dataset
+        The split is 80% training, 10% testing, and 10% validation.
+        """
         n = len(self.path_list)
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
         
     def get_face_embeddings(self):
+        """
+        Extracts face embeddings from training images using the model and FaceNet.
+
+        Returns
+        -------
+        dict
+            A dictionary where: keys are image labels=>names, and values are lists of embeddings.
+        """
         out_dict = {}
         paths = self.train[0]
         face_dict = FaceLoader(paths=paths).run()
@@ -48,6 +99,11 @@ class Embedder():
         return out_dict
     
     def database_input(self):
+        """
+        Inputs face embeddings into a ChromaDB collection.
+
+        The embeddings get unique ids containing person's name + count of repetitions of the same person.
+        """
         face_embeddings = self.get_face_embeddings()
         ids = []
         embeddings = []
@@ -66,6 +122,14 @@ class Embedder():
         ) 
 
     def query(self):
+        """
+        Queries the ChromaDB collection with a test set.
+
+        Returns
+        -------
+        list
+            The results of the query.
+        """
         collection = self.chroma_client.get_collection("test_collection")
         face_q = FaceLoader(paths=self.test[0]).run()
         face_q = [el for el in face_q.values()][0][0].astype('float32')
@@ -80,6 +144,14 @@ class Embedder():
         return results
 
     def run(self):
+        """
+        Executes the entire workflow in order.
+
+        Returns
+        -------
+        list
+            The results of the face recognition alg.
+        """
         self.get_paths()
         self.split_data()
         self.database_input()
