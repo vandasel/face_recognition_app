@@ -1,8 +1,7 @@
 chromadb
 keras-facenet
-mtcnn
 opencv-python
-tensorflow
 matplotlib
-tensorflow-rocm
+facenet-pytorch
 scipy
+numba
