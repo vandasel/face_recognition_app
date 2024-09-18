@@ -1,10 +1,13 @@
+from calculator import calculate_dict, get_best
 import chromadb
 from face_models.model_mtcnn import FaceLoader
+import json
 from keras_facenet import FaceNet
 import logging
 import numpy as np
 import os
 from string import digits
+import re
 import time 
 
 
@@ -33,7 +36,8 @@ class Embedder():
     """
     embedder = FaceNet()
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
-    threshold = 0.7
+    THRESHOLD = np.arange(0.0,1.05,0.05)
+
     def __init__(self,path):
         self.path = path
         self.path_list = []
@@ -76,7 +80,7 @@ class Embedder():
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
         
-    def get_face_embeddings(self):
+    def get_face_embeddings(self,paths):
         """
         Extracts face embeddings from training images using the model and FaceNet.
 
@@ -86,7 +90,6 @@ class Embedder():
             A dictionary where: keys are image labels=>names, and values are lists of embeddings.
         """
         out_dict = {}
-        paths = self.train[0]
         face_dict = FaceLoader(paths=paths).run()
         for name,faces in face_dict.items():
             embedded = []
@@ -101,10 +104,9 @@ class Embedder():
     def database_input(self):
         """
         Inputs face embeddings into a ChromaDB collection.
-
         The embeddings get unique ids containing person's name + count of repetitions of the same person.
         """
-        face_embeddings = self.get_face_embeddings()
+        face_embeddings = self.get_face_embeddings(paths=self.train[0])
         ids = []
         embeddings = []
         self.chroma_client.delete_collection("test_collection")
@@ -117,11 +119,15 @@ class Embedder():
                 ids.append(key)
                 embeddings.append(el.tolist())
         collection.add(
-            ids=ids,  
-            embeddings=embeddings
+            documents=ids,  
+            embeddings=embeddings,
+            ids = ids
         ) 
 
+
     def query(self):
+        results = {}
+        threshold_results = {}
         """
         Queries the ChromaDB collection with a test set.
 
@@ -131,17 +137,36 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_q = FaceLoader(paths=self.test[0]).run()
-        face_q = [el for el in face_q.values()][0][0].astype('float32')
-        face_q = np.expand_dims(face_q, axis=0)
-        
-        query_embedding = self.embedder.embeddings(face_q)[0]  
-        
-        results = collection.query(
-            query_embeddings=[query_embedding.tolist()],
-            n_results=len(self.test[0])  
-        )
-        return results
+        face_embeddings_query = self.get_face_embeddings(paths=self.test[0])
+        for threshold in list(self.THRESHOLD):
+            TP,TN,FP,FN = 0,0,0,0
+            for name,embed_list in face_embeddings_query.items():
+                for embedding in embed_list:
+                    result = collection.query(
+                        query_embeddings=embedding.tolist(),
+                        n_results=1
+                    )
+                    if name in results:
+                        results[name.rstrip(digits)].append(result.get("distances")[0][0])
+                    else:
+                        results[name.rstrip(digits)] = [result.get("distances")[0][0]]
+
+                    if result.get("ids",[[[]]])[0][0].rstrip(digits) == name:
+                        if result.get("distances",[[[]]])[0][0] < threshold:
+                            TP+=1
+                        else:
+                            FP+=1
+                    else:
+                        if result.get("distances",[[[]]])[0][0] > threshold:
+                            TN+=1
+                        else:
+                            FN+=1
+
+            threshold_results[f"{threshold:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
+        with open("test.txt",'w') as file:
+            file.write(json.dumps(threshold_results,indent=4))
+
+        return results, get_best(threshold_results)
 
     def run(self):
         """
@@ -157,12 +182,6 @@ class Embedder():
         self.database_input()
         return self.query()
 
-start_time = time.perf_counter()
 test = Embedder(path="/workspaces/face_recognition_app/dataset").run()
-end_time = time.perf_counter()
 
-logging.debug(f"Total execution time: {end_time - start_time:.1f} seconds")
-logging.debug(f"Person found : {test}")
 print()
-
-
