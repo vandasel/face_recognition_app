@@ -1,13 +1,15 @@
 import cv2 as cv
-from mtcnn import MTCNN
+from facenet_pytorch import MTCNN
 import matplotlib.pyplot as plt # for checking results
 import re
+import torch
 
 
 class FaceLoader():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     def __init__(self, paths:list):
         self.paths = paths
-        self.detector = MTCNN()
+        self.detector = MTCNN(keep_all=True, device=self.device, post_process=False)
         self.images = []
 
                     
@@ -16,11 +18,12 @@ class FaceLoader():
         for path in self.paths:
             image = cv.imread(path)
             img = cv.cvtColor(image,cv.COLOR_BGR2RGB)
-            face = self.detector.detect_faces(img)
-            if face:
-                x,y,w,h = face[0].get('box',[])
+            face = self.detector.detect(img)
+            if face[0] is not None and face[0][0].tolist():
+                x,y,w,h = face[0][0]
                 x,y = abs(x),abs(y)
-                face = img[y:y+h,x:x+w]
+                x,y,w,h = int(x),int(y),int(w),int(h)
+                face = img[x:x+w,y:y+h]
                 face_w = cv.resize(face,(160,160))
                 group = re.search(r'\/pins_(.*)\/',path)
                 if group:
@@ -34,4 +37,3 @@ class FaceLoader():
 
     def run(self):
         return self.get_faces()
-
