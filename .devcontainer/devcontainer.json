@@ -13,6 +13,7 @@
         }
     },
     "runArgs": [
-        "--network=chroma_face_app_network"  
+        "--network=chroma_face_app_network",
+        "--gpus=all"
     ]
 }

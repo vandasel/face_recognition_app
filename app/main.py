@@ -38,7 +38,7 @@ class Embedder():
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
     THRESHOLD = np.arange(0.0,1.85,0.05)
 
-    def __init__(self,path):
+    def __init__(self,path): 
         self.path = path
         self.path_list = []
         self.train = []
@@ -75,7 +75,7 @@ class Embedder():
         Splits the dataset
         The split is 80% training, 10% testing, and 10% validation.
         """
-        n = len(self.path_list)
+        n = 100
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
@@ -91,6 +91,7 @@ class Embedder():
         """
         out_dict = {}
         face_dict = FaceLoader(paths=paths).run()
+
         for name,faces in face_dict.items():
             embedded = []
             for face in faces:
@@ -106,7 +107,7 @@ class Embedder():
         Inputs face embeddings into a ChromaDB collection.
         The embeddings get unique ids containing person's name + count of repetitions of the same person.
         """
-        face_embeddings = self.get_face_embeddings(paths=self.path_list)
+        face_embeddings = self.get_face_embeddings(paths=self.train[0])
         ids = []
         embeddings = []
         self.chroma_client.delete_collection("test_collection")
@@ -137,7 +138,7 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_embeddings_query = self.get_face_embeddings(paths=self.val[0])
+        face_embeddings_query = self.get_face_embeddings(paths=self.test[0])
         for threshold in list(self.THRESHOLD):
             TP,TN,FP,FN = 0,0,0,0
             for name,embed_list in face_embeddings_query.items():

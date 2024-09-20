@@ -3,7 +3,7 @@ keras-facenet
 opencv-python
 matplotlib
 facenet-pytorch
-tensorflow
+tensorflow[and-cuda]
 scipy
 numba
 gradio
