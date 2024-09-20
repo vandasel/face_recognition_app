@@ -3,5 +3,7 @@ keras-facenet
 opencv-python
 matplotlib
 facenet-pytorch
+tensorflow
 scipy
 numba
+gradio

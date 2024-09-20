@@ -1,13 +1,13 @@
-from calculator import calculate_dict, get_best
+from app.calculator import calculate_dict, get_best
 import chromadb
-from face_models.model_mtcnn import FaceLoader
+import datetime
+from app.face_models.model_mtcnn import FaceLoader
 import json
 from keras_facenet import FaceNet
 import logging
 import numpy as np
 import os
 from string import digits
-import re
 import time 
 
 
@@ -36,7 +36,7 @@ class Embedder():
     """
     embedder = FaceNet()
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
-    THRESHOLD = np.arange(0.0,1.05,0.05)
+    THRESHOLD = np.arange(0.0,1.85,0.05)
 
     def __init__(self,path):
         self.path = path
@@ -106,7 +106,7 @@ class Embedder():
         Inputs face embeddings into a ChromaDB collection.
         The embeddings get unique ids containing person's name + count of repetitions of the same person.
         """
-        face_embeddings = self.get_face_embeddings(paths=self.train[0])
+        face_embeddings = self.get_face_embeddings(paths=self.path_list)
         ids = []
         embeddings = []
         self.chroma_client.delete_collection("test_collection")
@@ -137,7 +137,7 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_embeddings_query = self.get_face_embeddings(paths=self.test[0])
+        face_embeddings_query = self.get_face_embeddings(paths=self.val[0])
         for threshold in list(self.THRESHOLD):
             TP,TN,FP,FN = 0,0,0,0
             for name,embed_list in face_embeddings_query.items():
@@ -163,7 +163,7 @@ class Embedder():
                             FN+=1
 
             threshold_results[f"{threshold:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
-        with open("test.txt",'w') as file:
+        with open(str(datetime.datetime.now().isoformat()) + ".txt",'w') as file:
             file.write(json.dumps(threshold_results,indent=4))
 
         return results, get_best(threshold_results)
@@ -182,6 +182,15 @@ class Embedder():
         self.database_input()
         return self.query()
 
-test = Embedder(path="/workspaces/face_recognition_app/dataset").run()
+if __name__ == "__main__":
+
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+    start_time = time.time()
+    embedder = Embedder(path="/workspaces/face_recognition_app/dataset")
+    results = embedder.run()
+    end_time = time.time()
+    total_time = end_time - start_time
+    logging.info(f"Time of program: {total_time:.2f}")
+
 
 print()
