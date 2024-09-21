@@ -1,9 +1,7 @@
 chromadb
-keras-facenet
 opencv-python
-matplotlib
 facenet-pytorch
+keras-facenet
 tensorflow[and-cuda]
 scipy
-numba
 gradio

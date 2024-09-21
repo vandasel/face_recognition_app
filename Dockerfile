@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.3.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 
 WORKDIR /workspace
 
@@ -19,9 +19,6 @@ COPY requirements.txt .
 
 RUN python -m pip install --upgrade pip \
 && pip install --no-cache-dir -r requirements.txt
-
-
-
 
 
 CMD ["python", "app/main.py"]
