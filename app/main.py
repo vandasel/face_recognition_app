@@ -3,7 +3,6 @@ import chromadb
 import datetime
 from app.face_models.model_mtcnn import FaceLoader
 import json
-from keras_facenet import FaceNet
 import logging
 import numpy as np
 import os
@@ -34,9 +33,8 @@ class Embedder():
     val : list
         List of paths for validation images
     """
-    embedder = FaceNet()
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
-    THRESHOLD = np.arange(0.0,1.85,0.05)
+    THRESHOLD = np.arange(0.0,2.05,0.05)
 
     def __init__(self,path): 
         self.path = path
@@ -75,39 +73,18 @@ class Embedder():
         Splits the dataset
         The split is 80% training, 10% testing, and 10% validation.
         """
-        n = 100
+        n = len(self.path_list)
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
         
-    def get_face_embeddings(self,paths):
-        """
-        Extracts face embeddings from training images using the model and FaceNet.
-
-        Returns
-        -------
-        dict
-            A dictionary where: keys are image labels=>names, and values are lists of embeddings.
-        """
-        out_dict = {}
-        face_dict = FaceLoader(paths=paths).run()
-
-        for name,faces in face_dict.items():
-            embedded = []
-            for face in faces:
-                face_image = face.astype('float32')
-                face_image = np.expand_dims(face_image,axis=0)
-                out_image = self.embedder.embeddings(face_image)
-                embedded.append(out_image[0])
-            out_dict[name] = embedded
-        return out_dict
     
     def database_input(self):
         """
         Inputs face embeddings into a ChromaDB collection.
         The embeddings get unique ids containing person's name + count of repetitions of the same person.
         """
-        face_embeddings = self.get_face_embeddings(paths=self.train[0])
+        face_embeddings = FaceLoader(paths=self.train[0]).run()
         ids = []
         embeddings = []
         self.chroma_client.delete_collection("test_collection")
@@ -118,7 +95,8 @@ class Embedder():
                 k+=1
                 key = name+str(k)
                 ids.append(key)
-                embeddings.append(el.tolist())
+                embeddings.append(el.tolist()[0])
+
         collection.add(
             documents=ids,  
             embeddings=embeddings,
@@ -128,7 +106,6 @@ class Embedder():
 
     def query(self):
         results = {}
-        threshold_results = {}
         """
         Queries the ChromaDB collection with a test set.
 
@@ -138,36 +115,43 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_embeddings_query = self.get_face_embeddings(paths=self.test[0])
-        for threshold in list(self.THRESHOLD):
-            TP,TN,FP,FN = 0,0,0,0
-            for name,embed_list in face_embeddings_query.items():
-                for embedding in embed_list:
-                    result = collection.query(
-                        query_embeddings=embedding.tolist(),
-                        n_results=1
-                    )
-                    if name in results:
-                        results[name.rstrip(digits)].append(result.get("distances")[0][0])
-                    else:
-                        results[name.rstrip(digits)] = [result.get("distances")[0][0]]
+        face_embeddings_query = FaceLoader(paths=self.test[0]).run()
+        for name,embed_list in face_embeddings_query.items():
+            results[name] = []
+            for embedding in embed_list:
+                result = collection.query(
+                    query_embeddings=embedding.tolist()[0],
+                    n_results=1
+                )
+                
+                results[name].append(result)
+        return results        
 
-                    if result.get("ids",[[[]]])[0][0].rstrip(digits) == name:
-                        if result.get("distances",[[[]]])[0][0] < threshold:
+
+    def metrics(self):    
+        threshold_results = {}        
+        result_query = self.query()
+        for t in self.THRESHOLD:
+            TP,FP,TN,FN = 0,0,0,0
+            for name,results in result_query.items():
+                for obj in results:
+                    if obj.get("ids",[[[]]])[0][0].rstrip(digits) == name:
+                        if obj.get("distances",[[[]]])[0][0] < t:
                             TP+=1
                         else:
                             FP+=1
                     else:
-                        if result.get("distances",[[[]]])[0][0] > threshold:
+                        if obj.get("distances",[[[]]])[0][0] > t:
                             TN+=1
                         else:
                             FN+=1
+                
+            threshold_results[f"{t:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
 
-            threshold_results[f"{threshold:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
         with open(str(datetime.datetime.now().isoformat()) + ".txt",'w') as file:
             file.write(json.dumps(threshold_results,indent=4))
 
-        return results, get_best(threshold_results)
+        return threshold_results
 
     def run(self):
         """
@@ -181,10 +165,9 @@ class Embedder():
         self.get_paths()
         self.split_data()
         self.database_input()
-        return self.query()
+        return self.metrics()
 
 if __name__ == "__main__":
-
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     start_time = time.time()
     embedder = Embedder(path="/workspaces/face_recognition_app/dataset")
@@ -192,6 +175,5 @@ if __name__ == "__main__":
     end_time = time.time()
     total_time = end_time - start_time
     logging.info(f"Time of program: {total_time:.2f}")
-
 
 print()
