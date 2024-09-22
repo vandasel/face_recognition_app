@@ -148,7 +148,7 @@ class Embedder():
                 
             threshold_results[f"{t:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
 
-        with open(str(datetime.datetime.now().isoformat()) + ".txt",'w') as file:
+        with open(str("metric_tests/"+datetime.datetime.now().isoformat()) + ".txt",'w') as file:
             file.write(json.dumps(threshold_results,indent=4))
 
         return threshold_results, result_query
