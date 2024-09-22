@@ -2,3 +2,4 @@ dataset/
 chroma/my_db/
 **/__pycache__/
 chroma/my_db/chroma.sqlite3
+metric_tests/
