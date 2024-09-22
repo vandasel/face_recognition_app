@@ -73,7 +73,7 @@ class Embedder():
         Splits the dataset
         The split is 80% training, 10% testing, and 10% validation.
         """
-        n = len(self.path_list)
+        n = 1000
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
@@ -95,7 +95,7 @@ class Embedder():
                 k+=1
                 key = name+str(k)
                 ids.append(key)
-                embeddings.append(el.tolist()[0])
+                embeddings.append(el.tolist())
 
         collection.add(
             documents=ids,  
@@ -120,7 +120,7 @@ class Embedder():
             results[name] = []
             for embedding in embed_list:
                 result = collection.query(
-                    query_embeddings=embedding.tolist()[0],
+                    query_embeddings=embedding.tolist(),
                     n_results=1
                 )
                 
@@ -151,7 +151,7 @@ class Embedder():
         with open(str(datetime.datetime.now().isoformat()) + ".txt",'w') as file:
             file.write(json.dumps(threshold_results,indent=4))
 
-        return threshold_results
+        return threshold_results, result_query
 
     def run(self):
         """
@@ -166,7 +166,7 @@ class Embedder():
         self.split_data()
         self.database_input()
         return self.metrics()
-
+        
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     start_time = time.time()
