@@ -1,7 +1,7 @@
 chromadb
 opencv-python
 facenet-pytorch
-keras-facenet
 tensorflow[and-cuda]
 scipy
 gradio
+face-recognition

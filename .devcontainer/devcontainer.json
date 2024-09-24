@@ -15,5 +15,8 @@
     "runArgs": [
         "--network=chroma_face_app_network",
         "--gpus=all"
+    ],
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
     ]
 }

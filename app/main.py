@@ -2,6 +2,7 @@ from app.calculator import calculate_dict, get_best
 import chromadb
 import datetime
 from app.face_models.model_mtcnn import FaceLoader
+from app.face_models.model_face_recognition import FaceLoader2
 import json
 import logging
 import numpy as np
@@ -37,6 +38,7 @@ class Embedder():
     THRESHOLD = np.arange(0.0,2.05,0.05)
 
     def __init__(self,path): 
+        self.loader = FaceLoader2
         self.path = path
         self.path_list = []
         self.train = []
@@ -73,7 +75,7 @@ class Embedder():
         Splits the dataset
         The split is 80% training, 10% testing, and 10% validation.
         """
-        n = 1000
+        n = len(self.path_list)
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
@@ -84,7 +86,7 @@ class Embedder():
         Inputs face embeddings into a ChromaDB collection.
         The embeddings get unique ids containing person's name + count of repetitions of the same person.
         """
-        face_embeddings = FaceLoader(paths=self.train[0]).run()
+        face_embeddings = self.loader(paths=self.train[0]).run()
         ids = []
         embeddings = []
         self.chroma_client.delete_collection("test_collection")
@@ -115,7 +117,7 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_embeddings_query = FaceLoader(paths=self.test[0]).run()
+        face_embeddings_query = self.loader(paths=self.test[0]).run()
         for name,embed_list in face_embeddings_query.items():
             results[name] = []
             for embedding in embed_list:
