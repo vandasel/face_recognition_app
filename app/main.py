@@ -17,8 +17,8 @@ class Embedder():
 
     Attributes
     ----------
-    embedder : FaceNet
-        FaceNet model for generating embeddings from faces
+    loader : pytorch / face_recogniton
+        model for generating embeddings from faces
     chroma_client : chromadb.HttpClient
         A ChromaDB server client, connected by docker network
     threshold : for now float, than list
@@ -130,7 +130,15 @@ class Embedder():
         return results        
 
 
-    def metrics(self):    
+    def metrics(self):  
+        """
+        Calculates metrics based on query results.
+
+        Returns
+        -------
+        list
+            The results of the query and metric results.
+        """
         threshold_results = {}        
         result_query = self.query()
         for t in self.THRESHOLD:

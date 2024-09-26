@@ -12,7 +12,7 @@ class FaceLoader2():
         for path in self.paths:
             image = f.load_image_file(path) 
             face_locations = f.face_locations(image,model="cnn") 
-            face_encodings = f.face_encodings(image, face_locations)
+            face_encodings = f.face_encodings(image, face_locations,model="large")
             if face_encodings:
                 group = re.search(r'\/pins_(.*)\/', path)
                 name = group.group(1) if group else "unknown"
