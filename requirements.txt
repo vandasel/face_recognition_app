@@ -5,3 +5,5 @@ tensorflow[and-cuda]
 scipy
 gradio
 face-recognition
+seaborn
+matplotlib
