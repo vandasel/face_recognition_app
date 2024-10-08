@@ -27,11 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN python3.11 -m pip install --upgrade pip
 
-
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
-
 
 RUN git clone https://github.com/davisking/dlib.git \
     && cd dlib \
@@ -41,9 +39,7 @@ RUN git clone https://github.com/davisking/dlib.git \
     && cmake --build . --config Release \
     && cd .. \
     && python3.11 setup.py install
-
-
+    
 COPY . .
-
 
 CMD ["python", "app/main.py"]
