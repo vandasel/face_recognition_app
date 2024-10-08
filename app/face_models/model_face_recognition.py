@@ -1,9 +1,9 @@
+import dlib
 import face_recognition as f
 import logging
-import dlib
 import re
 
-class FaceLoader2():
+class FaceRecognitionLoader():
     def __init__(self,paths:list):
         self.paths = paths
     def get_faces(self) -> dict:
