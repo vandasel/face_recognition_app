@@ -1,8 +1,9 @@
+from app.face_models.model_mtcnn import PytorchLoader
+from app.face_models.model_face_recognition import FaceRecognitionLoader
 from app.calculator import calculate_dict, get_best
 import chromadb
 import datetime
-from app.face_models.model_mtcnn import FaceLoader
-from app.face_models.model_face_recognition import FaceLoader2
+from app.plotter import dataset_plotter
 import json
 import logging
 import numpy as np
@@ -35,10 +36,10 @@ class Embedder():
         List of paths for validation images
     """
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
-    THRESHOLD = np.arange(0.0,2.05,0.05)
+    THRESHOLD = np.arange(0.0,1.01,0.01)
 
     def __init__(self,path): 
-        self.loader = FaceLoader2
+        self.loader = PytorchLoader
         self.path = path
         self.path_list = []
         self.train = []
@@ -63,6 +64,7 @@ class Embedder():
         list
             A shuffled list of file paths
         """
+        np.random.seed(30)
         for dirpath, dirnames, filenames in os.walk(self.path):
             for filename in filenames:
                 self.path_list.append(os.path.join(dirpath, filename))
@@ -80,7 +82,10 @@ class Embedder():
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
         
-    
+    def plot_data(self):
+        data = [self.train[0],self.val[0],self.test[0]]
+        dataset_plotter(data=data)
+
     def database_input(self):
         """
         Inputs face embeddings into a ChromaDB collection.
@@ -106,7 +111,7 @@ class Embedder():
         ) 
 
 
-    def query(self):
+    def query(self,data_part):
         results = {}
         """
         Queries the ChromaDB collection with a test set.
@@ -117,7 +122,7 @@ class Embedder():
             The results of the query.
         """
         collection = self.chroma_client.get_collection("test_collection")
-        face_embeddings_query = self.loader(paths=self.test[0]).run()
+        face_embeddings_query = self.loader(paths=data_part).run()
         for name,embed_list in face_embeddings_query.items():
             results[name] = []
             for embedding in embed_list:
@@ -130,7 +135,7 @@ class Embedder():
         return results        
 
 
-    def metrics(self):  
+    def metrics(self,query,threshold,type):  
         """
         Calculates metrics based on query results.
 
@@ -140,8 +145,8 @@ class Embedder():
             The results of the query and metric results.
         """
         threshold_results = {}        
-        result_query = self.query()
-        for t in self.THRESHOLD:
+        result_query = query
+        for t in threshold:
             TP,FP,TN,FN = 0,0,0,0
             for name,results in result_query.items():
                 for obj in results:
@@ -158,11 +163,18 @@ class Embedder():
                 
             threshold_results[f"{t:.2f}"] = calculate_dict(TP=TP,TN=TN,FP=FP,FN=FN)
 
-        with open(str("metric_tests/"+datetime.datetime.now().isoformat()) + ".txt",'w') as file:
+        with open(str("metric_tests/"+type+str(self.loader.__name__)+"*"+datetime.datetime.now().isoformat()) + ".json",'w') as file:
             file.write(json.dumps(threshold_results,indent=4))
 
-        return threshold_results, result_query
+        return threshold_results
 
+
+    def metric_flow(self):
+        val_metrics = self.metrics(query=self.query(data_part=self.val[0]),threshold=self.THRESHOLD,type="val")
+        best_threshold = get_best(val_metrics)
+        test_metrics = self.metrics(query=self.query(data_part=self.test[0]),threshold=best_threshold,type="test")
+        return val_metrics,test_metrics
+    
     def run(self):
         """
         Executes the entire workflow in order.
@@ -175,7 +187,9 @@ class Embedder():
         self.get_paths()
         self.split_data()
         self.database_input()
-        return self.metrics()
+        return self.metric_flow()
+        
+    
         
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -186,4 +200,4 @@ if __name__ == "__main__":
     total_time = end_time - start_time
     logging.info(f"Time of program: {total_time:.2f}")
 
-print()
+print() 
