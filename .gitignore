@@ -4,3 +4,5 @@ chroma/my_db/
 chroma/my_db/chroma.sqlite3
 metric_tests/
 dlib/
+flagged/
+plots/
