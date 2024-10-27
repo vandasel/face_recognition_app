@@ -1,5 +1,5 @@
 {
-    "name": "Runner",
+    "name": "face_runner",
     "build": {
         "dockerfile": "../Dockerfile",
         "context": ".."

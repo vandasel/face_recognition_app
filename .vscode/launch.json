@@ -8,6 +8,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "subProcess": true,
+            "justMyCode": false,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"  
             }

@@ -7,3 +7,6 @@ gradio
 face-recognition
 seaborn
 matplotlib
+pandas
+openpyxl
+scikit-learn
