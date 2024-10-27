@@ -19,6 +19,7 @@ class PytorchLoader():
         count = 0
         iter_size = 75
         embeddings = []
+        paths = []
         for path in self.paths:
             try:
                 img = Image.open(path)
@@ -38,6 +39,7 @@ class PytorchLoader():
                         group = re.search(r'\/pins_(.*)\/', path)
                         name = group.group(1) if group else "unknown"
                         names.append(name)
+                        paths.append(path)
                         count += 1
                     if count % iter_size == 0:  
                         aligned_batch = torch.stack(aligned).to(self.device)
@@ -58,11 +60,19 @@ class PytorchLoader():
             embeddings.append(batch_embeddings)
             logging.info(f"last batch")
         embeddings = torch.cat(embeddings, dim=0)
+
         for i, key in enumerate(names):
+
+            d = {}
+            d = {
+                "path" : paths[i],
+                "embedding" : embeddings[i] 
+            }
+            
             if key in out:
-                out[key].append(embeddings[i])
+                out[key].append(d)
             else:
-                out[key] = [embeddings[i]]
+                out[key] = [d]
         return out
     
     def run(self):

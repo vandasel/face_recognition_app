@@ -1,3 +1,4 @@
+from plotter import save_mistakes
 def calculate_dict(TP,TN,FP,FN):
     return {
             "Accuracy" : (TP+TN)/(TP+TN+FP+FN),
@@ -11,8 +12,8 @@ def get_best(dictt:dict):
     maks = 0
     best = ""
     for threshold,metrics in dictt.items():
-        if metrics.get("Accuracy")>maks:
-            maks = metrics.get("Accuracy")
+        if metrics.get("accuracy")>maks:
+            maks = metrics.get("accuracy")
             best = threshold
     return [float(best)]
 

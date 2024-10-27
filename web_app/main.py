@@ -14,7 +14,7 @@ def embedder(input_img):
             n_results=1
         )
     if result.get("ids") and result.get("distances"):
-        if result.get("distances")[0][0] <= 0.3:
+        if result.get("distances")[0][0] <= 0.064:
             return result.get("ids")[0][0].rstrip(digits).title()
     return "Didnt find a match"
 
