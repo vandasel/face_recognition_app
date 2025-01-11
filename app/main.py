@@ -12,9 +12,9 @@ import os
 import pandas as pd
 from PIL import Image
 from string import digits
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, balanced_accuracy_score
 import time 
-
+import warnings
 
 class Embedder():
     """
@@ -82,7 +82,7 @@ class Embedder():
         Splits the dataset
         The split is 80% training, 10% testing, and 10% validation.
         """
-        n = 3000
+        n = len(self.path_list)
         self.train.append(self.path_list[:int(0.8 * n)])
         self.test.append(self.path_list[int(0.8 * n):int(0.8 * n)+int(0.1 * n)])
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
@@ -198,18 +198,21 @@ class Embedder():
                             y_pred.append(1)  
                             correctness.append("right")
                     k += 1
+
             accuracy = accuracy_score(y_true, y_pred)
-            precision = precision_score(y_true, y_pred, average='macro', zero_division=0)
-            recall = recall_score(y_true, y_pred, average='macro', zero_division=0)
-            f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
-   
-            
+            precision = precision_score(y_true, y_pred, average='binary', zero_division=0)
+            recall = recall_score(y_true, y_pred, average='binary', zero_division=0)
+            f1 = f1_score(y_true, y_pred, average='binary', zero_division=0)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                b_acc = balanced_accuracy_score(y_true, y_pred)
 
             threshold_results[f"{t:.3f}"]={
                 'accuracy': accuracy,
                 'precision': precision,
                 'recall': recall,
-                'f1_score': f1
+                'f1_score': f1,
+                'balanced_acc' : b_acc
             }
 
         if model == "test":
@@ -231,7 +234,7 @@ class Embedder():
 
 
     def metric_flow(self):
-        val_metrics = self.metrics(query=self.query(data_part=self.test[0]),threshold=self.THRESHOLD,model="val")
+        val_metrics = self.metrics(query=self.query(data_part=self.val[0]),threshold=self.THRESHOLD,model="val")
         best_threshold = get_best(val_metrics)
         test_metrics = self.metrics(query=self.query(data_part=self.test[0]),threshold=best_threshold,model="test")
         return val_metrics, test_metrics
