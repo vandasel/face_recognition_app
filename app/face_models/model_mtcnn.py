@@ -5,14 +5,51 @@ import re
 import torch
 
 class PytorchLoader():
+    """
+    Class for loading and processing images to extract face embeddings using PyTorch-based models.
+
+    Attributes
+    ----------
+    device : torch.device
+        The device ('cuda:0' if available, otherwise 'cpu') on which computations are performed.
+    paths : list
+        A list of image file paths to process.
+    detector : MTCNN
+        An instance of the MTCNN model for face detection and alignment.
+    embedder : InceptionResnetV1
+        A pre-trained InceptionResnetV1 model for generating face embeddings.
+    """
+    
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     
     def __init__(self, paths: list):
+        """
+        Initializes the PytorchLoader instance with image paths and models.
+
+        Parameters
+        ----------
+        paths : list
+            A list of file paths to the images to be processed.
+        """
         self.paths = paths
         self.detector = MTCNN(post_process=True, device=self.device)
         self.embedder = InceptionResnetV1(pretrained='vggface2').eval().to(self.device)
     
     def get_faces(self) -> dict:
+        """
+        Detects faces in the provided images, aligns them, and generates embeddings.
+
+        This method processes the images in batches to handle large datasets efficiently.
+        For each face detected, it stores the embedding and associated metadata in a dictionary.
+
+        Returns
+        -------
+        dict
+            A dictionary where the keys are names (extracted from image paths) and 
+            the values are lists of dictionaries containing:
+            - 'path': str, the file path of the image
+            - 'embedding': torch.Tensor, the face embedding
+        """
         out = {}
         aligned = []
         names = []
@@ -76,4 +113,14 @@ class PytorchLoader():
         return out
     
     def run(self):
+        """
+        Executes the facial recognition workflow.
+
+        This method acts as the entry point for extracting embeddings from the provided dataset.
+
+        Returns
+        -------
+        dict
+            A dictionary containing face embeddings and metadata, structured by name.
+        """
         return self.get_faces()

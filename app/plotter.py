@@ -41,7 +41,8 @@ def dataset_plotter(data):
         plt.xlabel('Count', fontsize=12)
         plt.ylabel('Person', fontsize=12)
 
-   
+        filedir = "plots"
+        os.makedirs(filedir, exist_ok=True)
         plt.savefig(f'plots/{names[i]}_top_bottom.png')
         plt.close()
 
@@ -67,11 +68,13 @@ def plot_distances(values, correctness, plot_type,name,dist_calc):
     plt.xlabel('Distance', fontsize=12)
     plt.ylabel('Count', fontsize=12)
 
-   
+    filedir = "plots"
+    os.makedirs(filedir, exist_ok=True)
     plt.savefig(f"plots/{plot_type}_{name}_{dist_calc}.png")
     plt.close()
 
 def save_mistakes(obj,k,filedir : str):
+    os.makedirs(filedir, exist_ok=True)
     img1 = Image.open(obj[1])
     img2 = Image.open(obj[0].get("documents", [[[]]])[0][0])
     img1.save(f"{filedir}/image{k}_1.png")   
@@ -102,7 +105,9 @@ def histogram_plot(data):
     plt.title("Histogram liczby zdjęć unikalnych osób")
     
     plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
-    plt.savefig("ludzie_histogram.png", dpi=300)
+    filedir = "plots"
+    os.makedirs(filedir, exist_ok=True)
+    plt.savefig("plots/ludzie_histogram.png", dpi=300)
     plt.close()
 
 paths = []

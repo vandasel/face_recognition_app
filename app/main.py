@@ -18,26 +18,28 @@ import warnings
 
 class Embedder():
     """
-    Class used for facial recognition algorithm TBC.
+    Class used for facial recognition algorithm.
 
     Attributes
     ----------
-    loader : pytorch / face_recogniton
-        model for generating embeddings from faces
+    loader : pytorch / face_recognition
+        Model for generating embeddings from faces.
     chroma_client : chromadb.HttpClient
-        A ChromaDB server client, connected by docker network
-    threshold : for now float, than list
-        A threshold used for face match results
+        A ChromaDB server client, connected by docker network.
+    threshold : ndarray
+        An array of threshold values used for face match results.
     path : str
-        Path to the dataset's directory
+        Path to the dataset's directory.
     path_list : list
-        File paths for all images in the directory
+        File paths for all images in the directory.
     train : list
-        List of paths for training images
+        List of paths for training images.
     test : list
-        List of paths for testing images
+        List of paths for testing images.
     val : list
-        List of paths for validation images
+        List of paths for validation images.
+    dist_calc : str
+        Distance metric to use for embedding comparison.
     """
     chroma_client = chromadb.HttpClient(host='chroma_docker',port=8000)
     THRESHOLD = np.arange(0.000,1.001,0.001)
@@ -52,22 +54,24 @@ class Embedder():
         self.val = []
 
         """
-        Initializes variables for future use as self.
+        Initializes the Embedder instance.
 
         Parameters
         ----------
         path : str
-            Path to the dataset's directory
+            Path to the dataset's directory.
+        dist_calc : str
+            Distance metric to use for embedding comparison.
         """
 
     def get_paths(self): 
         """
-        Collects the paths of all images in the dataset
+        Collects the paths of all images in the dataset.
 
         Returns
         -------
         list
-            A shuffled list of file paths
+            A shuffled list of file paths from the dataset directory.
         """
         np.random.seed(30)
         for dirpath, dirnames, filenames in os.walk(self.path):
@@ -79,7 +83,7 @@ class Embedder():
 
     def split_data(self):
         """
-        Splits the dataset
+        Splits the dataset into training, testing, and validation sets.
         The split is 80% training, 10% testing, and 10% validation.
         """
         n = len(self.path_list)
@@ -88,13 +92,18 @@ class Embedder():
         self.val.append(self.path_list[int(0.8 * n)+int(0.1 * n):])
         
     def plot_data(self):
+        """
+        Generates a plot to visualize the distribution of training, validation, and test data.
+        """
         data = [self.train[0],self.val[0],self.test[0]]
         dataset_plotter(data=data)
         
     def database_input(self):
         """
         Inputs face embeddings into a ChromaDB collection.
-        The embeddings get unique ids containing person's name + count of repetitions of the same person.
+
+        Each embedding is assigned a unique ID consisting of the person's name 
+        and a count of repetitions for the same person.
         """
         face_embeddings = self.loader(paths=self.train[0]).run()
         ids = []
@@ -127,12 +136,17 @@ class Embedder():
     def query(self,data_part):
         results = {}
         """
-        Queries the ChromaDB collection with a test set.
+        Queries the ChromaDB collection using embeddings from the given dataset partition.
+
+        Parameters
+        ----------
+        data_part : list
+            A list of file paths representing the dataset partition to query.
 
         Returns
         -------
-        list
-            The results of the query.
+        dict
+            A dictionary mapping person names to their query results.
         """
         collection = self.chroma_client.get_collection("test_collection")
         face_embeddings_query = self.loader(paths=data_part).run()
@@ -150,7 +164,7 @@ class Embedder():
 
 
 
-
+ 
 
     def metrics(self, query, threshold, model):
         """
@@ -228,6 +242,8 @@ class Embedder():
             disp.ax_.set_yticklabels(['P', 'N'])
             disp.ax_.set_xlabel('Predykcja', fontsize=12)  
             disp.ax_.set_ylabel('Prawdziwa etykieta', fontsize=12)  
+            filedir = "plots"
+            os.makedirs(filedir, exist_ok=True)
             plt.savefig(f"plots/threshold_{t:.3f}_{self.loader.__name__}_{self.dist_calc}_{model}_cm.png")
             plt.close()
         
