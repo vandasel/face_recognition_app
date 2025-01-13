@@ -199,13 +199,17 @@ class Embedder():
                             correctness.append("right")
                     k += 1
 
+            cm = confusion_matrix(y_true, y_pred)
+            tp, fp, fn, tn = cm.ravel()
+
             accuracy = accuracy_score(y_true, y_pred)
-            precision = precision_score(y_true, y_pred, average='binary', zero_division=0)
-            recall = recall_score(y_true, y_pred, average='binary', zero_division=0)
-            f1 = f1_score(y_true, y_pred, average='binary', zero_division=0)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                b_acc = balanced_accuracy_score(y_true, y_pred)
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+            f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+       
+            specifity = tn / (tn + fp)
+
+            b_acc = (recall + specifity) / 2    
 
             threshold_results[f"{t:.3f}"]={
                 'accuracy': accuracy,
@@ -222,6 +226,8 @@ class Embedder():
             plt.grid(False)
             disp.ax_.set_xticklabels(['P', 'N'])
             disp.ax_.set_yticklabels(['P', 'N'])
+            disp.ax_.set_xlabel('Predykcja', fontsize=12)  
+            disp.ax_.set_ylabel('Prawdziwa etykieta', fontsize=12)  
             plt.savefig(f"plots/threshold_{t:.3f}_{self.loader.__name__}_{self.dist_calc}_{model}_cm.png")
             plt.close()
         
@@ -259,7 +265,7 @@ class Embedder():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     start_time = time.time()
-    embedder = Embedder(path="/workspaces/face_recognition_app/dataset", dist_calc="cosine")
+    embedder = Embedder(path="/workspaces/face_recognition_app/dataset", dist_calc="l2")
     results = embedder.run()
     end_time = time.time()
     total_time = end_time - start_time
