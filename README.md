@@ -129,4 +129,4 @@ docker ps
 
 
 ### Web app
-![Alt text](poprawna1.png)
+![Alt text](example.png)
