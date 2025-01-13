@@ -4,7 +4,8 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from PIL import Image
-
+import os
+from matplotlib.ticker import MaxNLocator
 def dataset_plotter(data):
     sns.set_style(style="darkgrid")
     names = ["train", "val", "test"]
@@ -77,3 +78,37 @@ def save_mistakes(obj,k,filedir : str):
     img2.save(f"{filedir}/image{k}_2.png") 
     img1.close()
     img2.close()
+
+
+
+def histogram_plot(data):
+    sns.set_style("darkgrid")
+    
+    group_counts = []
+    
+    for path in data:
+        match = re.search(r'\/pins_(.*)\/', path)
+        if match:
+            group = match.group(1)
+            group_counts.append(group)
+    
+
+    group_frequencies = [int(group_counts.count(group)) for group in set(group_counts)]
+
+    plt.figure(figsize=(10, 6))
+    sns.histplot(group_frequencies, bins=10, kde=False)
+    plt.xlabel("Liczba zdjęć unikalnych osób")
+    plt.ylabel("Częstotliwość") 
+    plt.title("Histogram liczby zdjęć unikalnych osób")
+    
+    plt.gca().yaxis.set_major_locator(MaxNLocator(integer=True))
+    plt.savefig("ludzie_histogram.png", dpi=300)
+    plt.close()
+
+paths = []
+for dirpath, dirnames, filenames in os.walk("/workspaces/face_recognition_app/dataset"):
+    for filename in filenames:
+        paths.append(os.path.join(dirpath, filename))
+
+
+histogram_plot(paths)
