@@ -129,4 +129,4 @@ docker ps
 
 
 ### Web app
-![Alt text](C:/Users/kubav/Downloads/poprawna1.png)
+![Alt text](poprawna1.png)
