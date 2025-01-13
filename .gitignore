@@ -8,3 +8,5 @@ flagged/
 plots/
 falsepositive/
 falsenegative/
+performance/
+tests/
