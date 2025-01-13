@@ -12,8 +12,8 @@ def get_best(dictt:dict):
     maks = 0
     best = ""
     for threshold,metrics in dictt.items():
-        if metrics.get("accuracy")>maks:
-            maks = metrics.get("accuracy")
+        if metrics.get('f1_score')>=maks:
+            maks = metrics.get('f1_score')
             best = threshold
     return [float(best)]
 
