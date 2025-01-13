@@ -168,8 +168,21 @@ class Embedder():
 
     def metrics(self, query, threshold, model):
         """
-        Calculates metrics based on query results and collects distances for visualization.
-        Now also calculates classification metrics using scikit-learn.
+        Calculates performance metrics for the face recognition model.
+
+        Parameters
+        ----------
+        query : dict
+            The query results obtained from ChromaDB.
+        threshold : ndarray
+            An array of threshold values to evaluate.
+        model : str
+            The model type (e.g., 'test', 'val') to distinguish between training and validation.
+
+        Returns
+        -------
+        dict
+            A dictionary containing metrics (accuracy, precision, recall, F1-score, etc.) for each threshold.
         """
         threshold_results = {}
         values = []
@@ -256,6 +269,14 @@ class Embedder():
 
 
     def metric_flow(self):
+        """
+        Runs the evaluation process for the validation and test datasets.
+
+        Returns
+        -------
+        tuple
+            A tuple containing validation metrics and test metrics dictionaries.
+        """
         val_metrics = self.metrics(query=self.query(data_part=self.val[0]),threshold=self.THRESHOLD,model="val")
         best_threshold = get_best(val_metrics)
         test_metrics = self.metrics(query=self.query(data_part=self.test[0]),threshold=best_threshold,model="test")
@@ -263,12 +284,14 @@ class Embedder():
     
     def run(self):
         """
-        Executes the entire workflow in order.
+        Executes the entire facial recognition workflow.
+
+        The workflow includes dataset preprocessing, database setup, and evaluation metrics calculation.
 
         Returns
         -------
-        list
-            The results of the face recognition alg.
+        tuple
+            A tuple containing validation metrics and test metrics dictionaries.
         """
         self.get_paths()
         self.split_data()
